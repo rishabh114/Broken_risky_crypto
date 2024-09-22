@@ -18,7 +18,7 @@ export class AppComponent {
   message: string = '';
 
   createTempFile() {
-    const tempDir = path.join(__dirname, 'temp'); // Temporary directory path
+    const tempDir = path.join(__dirname, 'temp'); // Insecure temporary directory
     const tempFilePath = path.join(tempDir, 'tempfile.txt');
 
     // Create temp directory if it doesn't exist
@@ -26,9 +26,10 @@ export class AppComponent {
       fs.mkdirSync(tempDir);
     }
 
-    // Vulnerable: Writing user input to a temporary file without restrictions
-    fs.writeFileSync(tempFilePath, this.inputText, { mode: 0o777 }); // World-readable file
+    // Vulnerable: Writing user input to a temporary file without proper permissions
+    fs.writeFileSync(tempFilePath, this.inputText, { mode: 0o666 }); // Readable and writable by all users
 
     this.message = `Temp file created at: ${tempFilePath}`;
+    console.log(`Temp file created at: ${tempFilePath}`); // For debugging
   }
 }
