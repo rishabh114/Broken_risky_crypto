@@ -1,38 +1,46 @@
 import { Component } from '@angular/core';
-import * as fs from 'fs';
-import * as path from 'path';
+import * as crypto from 'crypto';
 
 @Component({
   selector: 'app-root',
   template: `
     <div>
-      <h1>Vulnerable Temporary File App (CWE-377, CWE-22, CWE-73)</h1>
-      <input [(ngModel)]="inputText" placeholder="Enter text to save" />
-      <button (click)="createTempFile()">Create Temp File</button>
-      <p *ngIf="message">{{ message }}</p>
+      <h1>Vulnerable Encryption App</h1>
+      <input [(ngModel)]="inputText" placeholder="Enter text to encrypt" />
+      <button (click)="encrypt()">Encrypt</button>
+      <pre>{{ encryptedData | json }}</pre>
     </div>
   `,
 })
 export class AppComponent {
   inputText: string = '';
-  message: string = '';
+  encryptedData: any;
 
-  createTempFile() {
-    // Using user input to construct the file path (CWE-22: Path Traversal)
-    const tempDir = path.join(__dirname, 'temp');
-    const unsafeFileName = `${this.inputText}.txt`; // User-controlled file name
-    const tempFilePath = path.join(tempDir, unsafeFileName);
+  encrypt() {
+    const secretText = this.inputText;
 
-    // Create temp directory if it doesn't exist, without validating input (CWE-73: External Control of File Path)
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir);
-    }
+    // DES Encryption (using createCipheriv)
+    const desKey = Buffer.from('12345678'); // 8-byte key for DES
+    const desIv = Buffer.alloc(8); // DES uses 8-byte IV
+    const desCipher = crypto.createCipheriv('des-cbc', desKey, desIv); // Use createCipheriv for DES
+    let desEncrypted = desCipher.update(secretText, 'utf8', 'hex');
+    desEncrypted += desCipher.final('hex');
 
-    // Vulnerable: Writing user input to a temporary file with world-writable permissions (CWE-377: Insecure Temp File)
-    // No validation on user input, allowing dangerous characters (e.g., ../ for directory traversal)
-    fs.writeFileSync(tempFilePath, this.inputText, { mode: 0o777 }); // World-writable, readable, and executable
+    // AES Encryption (using createCipheriv)
+    const aesKey = Buffer.from('1234567890123456'); // 16-byte key for AES-128
+    const aesIv = crypto.randomBytes(16); // Random 16-byte IV for AES
+    const aesCipher = crypto.createCipheriv('aes-128-cbc', aesKey, aesIv); // Use createCipheriv for AES
+    let aesEncrypted = aesCipher.update(secretText, 'utf8', 'hex');
+    aesEncrypted += aesCipher.final('hex');
 
-    this.message = `Temp file created at: ${tempFilePath}`;
-    console.log(`Temp file created at: ${tempFilePath}`); // For debugging
+    // Expose sensitive data directly (vulnerable practice)
+    this.encryptedData = {
+      des: desEncrypted,
+      aes: aesEncrypted,
+      aesIv: aesIv.toString('hex'), // Exposing the IV for AES (for demonstration)
+    };
+
+    console.log('DES Encrypted:', desEncrypted);
+    console.log('AES Encrypted:', aesEncrypted);
   }
 }
