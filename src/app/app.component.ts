@@ -1,3 +1,10 @@
+/* 
+Sample Code for Vulnerability Type: Use of a Broken or Risky Cryptographic Algorithm
+CWE: CWE-327: Use of a Broken or Risky Cryptographic Algorithm
+
+
+
+*/
 import { Component } from '@angular/core';
 import * as crypto from 'crypto';
 
@@ -18,26 +25,26 @@ export class AppComponent {
 
   encrypt() {
     const secretText = this.inputText;
+    const key = Buffer.from('your-secret-key-16'); // Replace with a 16-byte key for AES-128
+    const desKey = Buffer.from('12345678'); // DES requires an 8-byte key
+    const iv = Buffer.alloc(8, 0); // Initialization vector for DES and AES
 
-    // DES Encryption (using createCipheriv)
-    const desKey = Buffer.from('12345678'); // 8-byte key for DES
-    const desIv = Buffer.alloc(8); // DES uses 8-byte IV
-    const desCipher = crypto.createCipheriv('des-cbc', desKey, desIv); // Use createCipheriv for DES
+    // DES Encryption (Avoid if possible due to weak encryption)
+    const desCipher = crypto.createCipheriv('des-cbc', desKey, iv); // DES encryption with CBC mode
     let desEncrypted = desCipher.update(secretText, 'utf8', 'hex');
     desEncrypted += desCipher.final('hex');
 
-    // AES Encryption (using createCipheriv)
-    const aesKey = Buffer.from('1234567890123456'); // 16-byte key for AES-128
-    const aesIv = crypto.randomBytes(16); // Random 16-byte IV for AES
-    const aesCipher = crypto.createCipheriv('aes-128-cbc', aesKey, aesIv); // Use createCipheriv for AES
+    // AES-128-CBC Encryption (Preferred for strong encryption)
+    const aesIv = crypto.randomBytes(16); // Random IV for AES-128-CBC
+    const aesCipher = crypto.createCipheriv('aes-128-cbc', key, aesIv); // AES-128-CBC encryption
     let aesEncrypted = aesCipher.update(secretText, 'utf8', 'hex');
     aesEncrypted += aesCipher.final('hex');
 
-    // Expose sensitive data directly (vulnerable practice)
+    // Store encrypted data
     this.encryptedData = {
       des: desEncrypted,
       aes: aesEncrypted,
-      aesIv: aesIv.toString('hex'), // Exposing the IV for AES (for demonstration)
+      aesIv: aesIv.toString('hex'), // Exposing IV for AES-128-CBC
     };
 
     console.log('DES Encrypted:', desEncrypted);
